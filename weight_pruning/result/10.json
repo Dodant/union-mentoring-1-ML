@@ -1,0 +1,1 @@
+{"result": [{"p": 10, "trainset_acc": 82.31, "testset_acc": 77.38, "num_of_zeros": 688488, "num_of_weights": 6884832, "pruned_ratio": 10.00006971847679}]}
