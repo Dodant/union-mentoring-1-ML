@@ -79,11 +79,11 @@ def before_amp(pin_memory, num_workers):
     batch_size = 1024
 
 
-    cifarset = CIFAR10(root='./data', train=True, transform=transform)
-    testset = CIFAR10(root='./data', train=False, transform=test_transform)
+    cifarset = CIFAR10(root='./data', train=True, download=True, transform=transform)
+    testset = CIFAR10(root='./data', train=False, download=True, transform=test_transform)
 
-    trainloader = DataLoader(cifarset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory)
-    testloader = DataLoader(testset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory)
+    trainloader = DataLoader(cifarset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory, drop_last=True)
+    testloader = DataLoader(testset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory, drop_last=True)
 
 
     net = Net()
@@ -98,9 +98,9 @@ def before_amp(pin_memory, num_workers):
     train_st = time.time()
     for epoch in range(epochs):
         # preprocessing time
-        p_st = time.time()
+        p_list = []
         for inputs, labels in trainloader:
-            p_end = time.time()
+            p_list.append(time.time())
             
             # dataloading time
             l_st = time.time()
@@ -120,7 +120,7 @@ def before_amp(pin_memory, num_workers):
             optimizer.step()
             b_end = time.time()
 
-        p_time = p_end - p_st
+        p_time = p_list[-1] - p_list[-2]
         l_time = l_end - l_st
         f_time = f_end - f_st
         b_time = b_end - b_st
@@ -129,6 +129,7 @@ def before_amp(pin_memory, num_workers):
         if epoch == epochs-1:
             print(f'Config: pm={pin_memory}, nw={num_workers} || preprocess = {p_time:0.4f}s, load = {l_time:0.4f}s, forward = {f_time:0.4f}s, backward = {b_time:0.4f}s')
             print(f'Pre | Load | FW | BW : {p_time*100/T_time:0.3f}% | {l_time*100/T_time:0.3f}% | {f_time*100/T_time:0.3f}% | {b_time*100/T_time:0.3f}%')
+    
     train_end = time.time()
     print(f'Total Training Time : {train_end-train_st:0.1f}s')    
         
