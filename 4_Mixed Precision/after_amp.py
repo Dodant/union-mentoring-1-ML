@@ -97,10 +97,17 @@ def after_amp(pin_memory, num_workers):
 
     epochs = 30
 
+    p_time = 0
+    l_time = 0
+    f_time = 0
+    b_time = 0
+    T_time = 0
+
     train_st = time.time()
     for epoch in range(epochs):
         # preprocessing time
         p_list = []
+        p_list.append(time.time())
         for inputs, labels in trainloader:
             p_list.append(time.time())
             
@@ -124,18 +131,20 @@ def after_amp(pin_memory, num_workers):
             scaler.update()
             b_end = time.time()
         
-        p_time = p_list[-1] - p_list[-2]
-        l_time = l_end - l_st
-        f_time = f_end - f_st
-        b_time = b_end - b_st
-        T_time = p_time + l_time + f_time + b_time
+            p_time += p_list[-1] - p_list[0]
+            l_time += l_end - l_st
+            f_time += f_end - f_st
+            b_time += b_end - b_st
 
-        if epoch == epochs-1:
-            print(f'Config: pm={pin_memory}, nw={num_workers} || preprocess = {p_time:0.4f}s, load = {l_time:0.4f}s, forward = {f_time:0.4f}s, backward = {b_time:0.4f}s')
-            print(f'Pre | Load | FW | BW : {p_time*100/T_time:0.3f}% | {l_time*100/T_time:0.3f}% | {f_time*100/T_time:0.3f}% | {b_time*100/T_time:0.3f}%')
-    
+            p_list = []
+            p_list.append(time.time())
+
     train_end = time.time()
-    print(f'Total Training Time : {train_end-train_st:0.1f}s')    
+
+    T_time = train_end - train_st
+    print(f'Config: pm={pin_memory}, nw={num_workers} || preprocess = {p_time:0.1f}s, load = {l_time:0.1f}s, forward = {f_time:0.1f}s, backward = {b_time:0.1f}s')
+    print(f'Pre | Load | FW | BW : {p_time*100/T_time:0.1f}% | {l_time*100/T_time:0.1f}% | {f_time*100/T_time:0.1f}% | {b_time*100/T_time:0.1f}%')
+    print(f'Total Training Time : {train_end-train_st:0.1f}s')  
     
     correct = 0
     total = 0
