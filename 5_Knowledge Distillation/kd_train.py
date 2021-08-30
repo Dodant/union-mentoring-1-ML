@@ -1,7 +1,6 @@
 import torch
 import torch.optim as optim
 import torch.cuda.amp as amp
-import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import random_split
@@ -13,12 +12,12 @@ import time
 import argparse
 
 def DistillationLoss(student_logit, teacher_logit, T):
-    soft_label = F.softmax(teacher_logit / T, dim=1)
-    soft_prediction = F.log_softmax(student_logit / T, dim=1)
-    return nn.KLDivLoss()(soft_prediction, soft_label)
+    soft_label = F.softmax(teacher_logit/T, dim=1)
+    soft_prediction = F.log_softmax(student_logit/T, dim=1)
+    return F.kl_div(soft_prediction, soft_label)
 
 def FinalLoss(teacher_logit, student_logit, labels, T, alpha):
-    return (1.-alpha)*nn.CrossEntropyLoss()(student_logit, labels) + (alpha*T*T)*DistillationLoss(student_logit, teacher_logit, T)
+    return (1.-alpha)*F.cross_entropy(student_logit, labels) + (alpha*T*T)*DistillationLoss(student_logit, teacher_logit, T)
 
 def kd_train(student_model, T):
     # hyperparameter
@@ -52,7 +51,7 @@ def kd_train(student_model, T):
         
 
     imagenet = datasets.ImageFolder('./imagenet-object-localization-challenge/imagenet_object_localization_patched2019/ILSVRC/Data/CLS-LOC/train', transform=transform)
-    trainset, testset = random_split(imagenet, [1_000_000, len(imagenet) - 1_000_000])
+    trainset, testset = random_split(imagenet, [1_000_000, len(imagenet) - 1_000_000]) 
     trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True, drop_last=True)
     testloader = DataLoader(testset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True, drop_last=True)
 
@@ -94,7 +93,7 @@ def kd_train(student_model, T):
             print(f"epoch: {epoch + 1} || tl: {epoch_loss:.3f}, ta: {epoch_acc:.2f}%")
 
     train_end = time.time()
-    print(f'Training Finished - Train time : {(train_end - train_st)//60}m/n')
+    print(f'Training Finished - Train time : {(train_end - train_st)//60}m\n')
     
     PATH = './student_' + str(student_model) + '_' + str(T) + '.pth'
     torch.save(student.state_dict(), PATH)
